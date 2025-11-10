@@ -187,7 +187,7 @@ This intelligent algorithm selection is what makes GraphQA special - it brings *
 ### Prerequisites
 
 - **Python 3.8+** (recommended: Python 3.10+)
-- **OpenAI API Key** for LLM functionality
+- **Ollama** installed and running locally (default: http://localhost:11434)
 
 ### Installation
 
@@ -246,20 +246,25 @@ pip install -e ".[all]"
 
 ### First Run
 
-Set your OpenAI API key:
+Make sure Ollama is running with gpt-oss:20b model:
 
-**Option 1 (Recommended): Use .env file**
+**Step 1: Install and start Ollama**
+```bash
+# Install Ollama from https://ollama.ai
+# Then pull the gpt-oss:20b model
+ollama pull gpt-oss:20b
+
+# Verify Ollama is running
+curl http://localhost:11434/api/tags
+```
+
+**Step 2 (Optional): Configure custom Ollama URL**
 ```bash
 # Copy the example environment file
 cp env.example .env
 
-# Edit .env and add your API key
-# OPENAI_API_KEY=your-api-key-here
-```
-
-**Option 2: Set environment variable**
-```bash
-export OPENAI_API_KEY="your-api-key-here"
+# Edit .env if using custom Ollama URL
+# OLLAMA_BASE_URL=http://your-custom-url:11434
 ```
 
 Test the installation:
@@ -814,13 +819,16 @@ source venv/bin/activate
 pip install -e .
 ```
 
-**OpenAI API Error**
+**Ollama Connection Error**
 ```bash
-# Option 1: Check your .env file
-cat .env  # Should contain: OPENAI_API_KEY=your-key-here
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
 
-# Option 2: Set environment variable
-export OPENAI_API_KEY="your-key-here"
+# If not running, start Ollama
+ollama serve
+
+# Verify gpt-oss:20b model is available
+ollama list | grep gpt-oss
 ```
 
 **Memory Issues with Large Graphs**
@@ -858,10 +866,10 @@ pip install langfuse  # For observability
 ```bash
 # Check if .env file exists and has correct format
 cat .env
-# Should contain: OPENAI_API_KEY=your-actual-key-here
+# Optional: OLLAMA_BASE_URL=http://localhost:11434
 
-# Reload .env in current session
-python -c "from dotenv import load_dotenv; load_dotenv(override=True); import os; print('Loaded:', bool(os.getenv('OPENAI_API_KEY')))"
+# Check if Ollama is accessible
+curl http://localhost:11434/api/tags
 ```
 
 **Performance Issues / Out of Memory**

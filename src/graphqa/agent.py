@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional, Union
 from pathlib import Path
 import networkx as nx
 
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOllama
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.tools import Tool
 from langchain.memory import ConversationBufferMemory
@@ -55,11 +55,11 @@ class UniversalRetrievalAgent:
     - Production logging and error handling
     """
     
-    def __init__(self, 
+    def __init__(self,
                  dataset_name: str = "amazon",
                  config: Optional[UniversalRetrieverConfig] = None,
                  config_file: Optional[str] = None,
-                 llm_model: str = "gpt-4o",  # Use GPT-4o with 128k context
+                 llm_model: str = "gpt-oss:20b",  # Use gpt-oss 20b via Ollama
                  temperature: float = 0.1,
                  verbose: bool = False):
         """
@@ -99,10 +99,10 @@ class UniversalRetrievalAgent:
         self.agent_executor = None
         
         # Initialize LLM with optimized settings for large contexts
-        self.llm = ChatOpenAI(
+        self.llm = ChatOllama(
             model=llm_model,
             temperature=temperature,
-            max_tokens=10000,  # Increased output limit
+            num_predict=10000,  # Increased output limit (Ollama uses num_predict instead of max_tokens)
             timeout=60        # Longer timeout for complex queries
         )
         
