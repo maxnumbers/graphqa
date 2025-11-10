@@ -105,11 +105,14 @@ class UniversalRetrievalAgent:
         self.agent_executor = None
         
         # Initialize LLM with optimized settings for large contexts
+        # Note: timeout is per-request, important for slow local inference
+        llm_timeout = self.config.llm.timeout_seconds if hasattr(self.config.llm, 'timeout_seconds') else 300
         self.llm = ChatOllama(
             model=llm_model,
             temperature=temperature,
             num_predict=10000,  # Increased output limit (Ollama uses num_predict instead of max_tokens)
-            timeout=60        # Longer timeout for complex queries
+            timeout=llm_timeout,  # Per-request timeout (default 300s for slow local inference)
+            keep_alive="10m"  # Keep model loaded in memory for faster responses
         )
         
         # Memory for conversation context (with size limit to prevent context overflow)
@@ -401,13 +404,17 @@ Thought:{{agent_scratchpad}}"""
         )
         
         # Create agent executor with verbose output to show thinking process
+        # Configure for slow local inference with increased timeouts and iterations
+        max_exec_time = self.config.llm.timeout_seconds * 10 if hasattr(self.config.llm, 'timeout_seconds') else 1800  # 30 min default
         self.agent_executor = AgentExecutor(
             agent=self.agent,
             tools=self.tools,
             memory=self.memory,
             verbose=True,  # Keep verbose to show agent thinking
-            handle_parsing_errors=True,
-            max_iterations=self.config.llm.max_iterations  # Configurable from config.yaml
+            handle_parsing_errors=True,  # Allows agent to retry on format errors
+            max_iterations=self.config.llm.max_iterations,  # Configurable from config.yaml
+            max_execution_time=max_exec_time,  # Overall execution timeout for slow inference
+            return_intermediate_steps=False  # Reduce memory overhead
         )
         
         logger.info("✅ Universal agent created successfully")
