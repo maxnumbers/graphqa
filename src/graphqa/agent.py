@@ -363,7 +363,7 @@ Action Input: [input for the tool]
 Example:
 Thought: I need to explore the graph schema first
 Action: graph_explorer
-Action Input: {"operation": "discover_schema"}
+Action Input: <JSON input here>
 
 Now, provide your response in the correct format."""
 
@@ -375,7 +375,8 @@ Now, provide your response in the correct format."""
         # Create a custom prompt that includes schema information
         schema_info = self._get_schema_summary()
 
-        prompt_template = f"""You are a Universal Graph Analysis Assistant for {self.dataset_name} dataset.
+        # Use regular string (not f-string) to avoid escaping issues with JSON examples
+        prompt_template = """You are a Universal Graph Analysis Assistant for {dataset_name} dataset.
 
 CURRENT SCHEMA: {schema_info}
 
@@ -414,6 +415,8 @@ Thought:{{agent_scratchpad}}"""
             template=prompt_template,
             input_variables=["input", "agent_scratchpad"],
             partial_variables={
+                "dataset_name": self.dataset_name,
+                "schema_info": schema_info,
                 "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
                 "tool_names": ", ".join([tool.name for tool in self.tools])
             }

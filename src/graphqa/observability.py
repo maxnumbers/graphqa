@@ -48,10 +48,15 @@ class UniversalObservability:
 
         try:
             if auto_instrument:
+                # Suppress OTLP export errors if Phoenix server isn't running
+                import logging as std_logging
+                otlp_logger = std_logging.getLogger("opentelemetry.exporter.otlp.proto.http.trace_exporter")
+                otlp_logger.setLevel(std_logging.CRITICAL)  # Suppress 405 errors
+
                 # Register Phoenix OTEL tracer
+                # Don't specify endpoint - let it auto-discover local Phoenix server
                 self.tracer_provider = register(
-                    project_name="graphqa",
-                    endpoint=self.endpoint
+                    project_name="graphqa"
                 )
 
                 # Auto-instrument LangChain for automatic tracing
@@ -59,8 +64,8 @@ class UniversalObservability:
 
                 self.enabled = True
                 logger.info(f"✅ Arize Phoenix observability enabled")
-                logger.info(f"   Endpoint: {self.endpoint}")
                 logger.info("   View traces at: http://localhost:6006")
+                logger.info("   (If traces don't appear, make sure Phoenix server is running)")
 
         except Exception as e:
             logger.warning(f"⚠️ Phoenix setup failed: {e}")
