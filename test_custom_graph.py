@@ -43,10 +43,32 @@ def test_with_direct_loading(gml_file_path):
     class SimpleLoader(BaseGraphLoader):
         def load_graph(self):
             return graph
+
         def get_dataset_description(self):
-            return "Custom graph from file"
+            # Auto-generate description from graph structure
+            node_count = graph.number_of_nodes()
+            edge_count = graph.number_of_edges()
+            is_directed = "directed" if graph.is_directed() else "undirected"
+
+            # Sample node to get attributes
+            sample_attrs = []
+            if node_count > 0:
+                sample_node = list(graph.nodes(data=True))[0]
+                sample_attrs = list(sample_node[1].keys())[:5]
+
+            desc = f"{is_directed.capitalize()} graph with {node_count} nodes and {edge_count} edges"
+            if sample_attrs:
+                desc += f". Node attributes: {', '.join(sample_attrs)}"
+
+            return desc
+
         def get_sample_queries(self):
-            return []
+            return [
+                "What does this graph contain?",
+                "What are the most connected nodes?",
+                "Find communities or clusters",
+                "What attributes do nodes have?"
+            ]
 
     loader = SimpleLoader({})
     agent.schema = loader.discover_schema(graph)
@@ -123,7 +145,9 @@ class GMLGraphLoader(BaseGraphLoader):
         return graph
 
     def get_dataset_description(self) -> str:
-        return f"{self.graph_name} - Custom graph data loaded from GML file"
+        import os
+        filename = os.path.basename(self.gml_file)
+        return f"{self.graph_name} - Graph data loaded from {filename}"
 
     def get_sample_queries(self) -> list[str]:
         return [
