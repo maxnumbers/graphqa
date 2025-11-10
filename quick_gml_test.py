@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-Quick GML Test - Minimal example to load and query a GML file
+Quick Graph Test - Load and query graph files (GML, GraphML, etc.)
+
+Supports: GML, GraphML (XML), NetworkX Pickle
 
 Usage:
     python quick_gml_test.py your_graph.gml
+    python quick_gml_test.py your_graph.graphml
 """
 
 import sys
@@ -22,8 +25,36 @@ def main():
 
     print(f"\n🔍 Loading {gml_file}...")
 
-    # 1. Load GML file
-    graph = nx.read_gml(gml_file)
+    # 1. Detect format and load graph
+    try:
+        # Try to peek at file to detect format
+        with open(gml_file, 'r', encoding='utf-8') as f:
+            first_line = f.readline().strip()
+
+        if first_line.startswith('<?xml') or first_line.startswith('<graphml'):
+            print("📄 Detected GraphML (XML) format")
+            graph = nx.read_graphml(gml_file)
+        else:
+            print("📄 Detected GML format")
+            graph = nx.read_gml(gml_file)
+
+    except UnicodeDecodeError:
+        # Try binary formats
+        print("⚠️  Text format failed, trying binary...")
+        try:
+            graph = nx.read_gpickle(gml_file)
+            print("📄 Loaded as pickle format")
+        except:
+            print("❌ Could not load file in any known format")
+            print("   Supported formats: GML, GraphML (XML), Pickle")
+            sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error loading file: {e}")
+        print("\n💡 Tip: Check the file format:")
+        print("   - GML: Plain text format")
+        print("   - GraphML: XML format (starts with <?xml)")
+        print("   - Try: nx.read_graphml() for XML files")
+        sys.exit(1)
 
     # 2. Convert to MultiDiGraph (GraphQA requirement)
     if not isinstance(graph, nx.MultiDiGraph):

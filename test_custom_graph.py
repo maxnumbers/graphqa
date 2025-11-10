@@ -88,11 +88,22 @@ class GMLGraphLoader(BaseGraphLoader):
         self.graph_name = self.config.get('graph_name', 'Custom Graph')
 
     def load_graph(self) -> nx.MultiDiGraph:
-        """Load GML file and return as MultiDiGraph"""
-        print(f"Loading GML file: {self.gml_file}")
+        """Load graph file (auto-detects GML or GraphML format)"""
+        print(f"Loading graph file: {self.gml_file}")
 
-        # Load using NetworkX
-        graph = nx.read_gml(self.gml_file)
+        # Auto-detect format and load
+        try:
+            with open(self.gml_file, 'r', encoding='utf-8') as f:
+                first_line = f.readline().strip()
+
+            if first_line.startswith('<?xml') or first_line.startswith('<graphml'):
+                print("📄 Detected GraphML (XML) format")
+                graph = nx.read_graphml(self.gml_file)
+            else:
+                print("📄 Detected GML format")
+                graph = nx.read_gml(self.gml_file)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load graph file: {e}")
 
         # Convert to MultiDiGraph if needed
         if not isinstance(graph, nx.MultiDiGraph):
