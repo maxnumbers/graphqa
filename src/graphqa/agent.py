@@ -15,7 +15,13 @@ from pathlib import Path
 import networkx as nx
 
 from langchain_community.chat_models import ChatOllama
-from langchain.agents import create_react_agent, AgentExecutor
+try:
+    # LangChain 1.0+ moved create_react_agent to langgraph
+    from langgraph.prebuilt import create_react_agent
+except ImportError:
+    # Fallback for older versions
+    from langchain.agents import create_react_agent
+from langchain.agents import AgentExecutor
 from langchain.tools import Tool
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate

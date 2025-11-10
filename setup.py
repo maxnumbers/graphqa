@@ -12,6 +12,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 requirements = [
     "langchain>=0.3.0",
     "langchain-community>=0.3.0",
+    "langgraph>=0.2.0",
     "networkx>=3.0",
     "numpy>=1.24.0",
     "pandas>=1.5.0",
