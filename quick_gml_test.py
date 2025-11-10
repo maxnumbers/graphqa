@@ -69,7 +69,17 @@ def main():
 
     # 4. Discover schema
     print("🔍 Discovering schema...")
-    loader = BaseGraphLoader({})
+
+    # Create a minimal concrete loader just for schema discovery
+    class SimpleLoader(BaseGraphLoader):
+        def load_graph(self):
+            return graph
+        def get_dataset_description(self):
+            return "Custom graph from file"
+        def get_sample_queries(self):
+            return []
+
+    loader = SimpleLoader({})
     agent.schema = loader.discover_schema(graph)
     print(f"✅ Found {len(agent.schema.node_attributes)} node attributes, {len(agent.schema.edge_attributes)} edge attributes\n")
 
