@@ -2,7 +2,7 @@
 GraphQA Basic Usage Example
 
 This example demonstrates how to get started with GraphQA.
-Make sure you have set your OPENAI_API_KEY environment variable.
+Make sure you have Ollama running with the gpt-oss:20b model.
 """
 
 import os
@@ -19,55 +19,54 @@ except ImportError:
 def check_requirements():
     """Check if all requirements are met"""
     print("🔍 Checking requirements...")
-    
+
     # Check Python version
     if sys.version_info < (3, 8):
         print("❌ Error: Python 3.8+ required")
         return False
-    
-    # Check for OpenAI API key
-    if not os.getenv("OPENAI_API_KEY"):
-        print("❌ Error: OPENAI_API_KEY not found")
-        
-        env_file = Path(".env")
-        env_example_file = Path("env.example")
-        
-        print("   Get your API key from: https://platform.openai.com/api-keys")
-        print("   Then choose one of these options:")
-        print("")
-        
-        if env_example_file.exists():
-            print("   Option 1 (Recommended): Copy and edit env.example")
-            print("      cp env.example .env")
-            print("      # Edit .env and set your OPENAI_API_KEY")
-        else:
-            print("   Option 1: Create a .env file")
-            print("      echo 'OPENAI_API_KEY=your-key-here' > .env")
-        
-        print("   Option 2: Set environment variable")
-        print("      export OPENAI_API_KEY='your-key-here'")
-        print("")
-        
-        # Offer to reload .env if it exists
-        if env_file.exists():
-            response = input("   Do you already have the key in .env? Try reloading it? (y/N): ").lower()
-            if response == 'y':
-                try:
-                    from dotenv import load_dotenv
-                    load_dotenv(override=True)
-                    if os.getenv("OPENAI_API_KEY"):
-                        print("✅ API key loaded from .env file!")
-                        return True
-                    else:
-                        print("❌ Still no OPENAI_API_KEY found in .env file")
-                        print("   Please check your .env file contains: OPENAI_API_KEY=your-key-here")
-                except ImportError:
-                    print("❌ python-dotenv not available, cannot reload .env")
-                except Exception as e:
-                    print(f"❌ Error reloading .env: {e}")
-        
+
+    # Check for Ollama
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "http://localhost:11434/api/tags"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if result.returncode != 0:
+            print("❌ Error: Ollama is not running")
+            print("   Install Ollama from: https://ollama.ai")
+            print("   Then start it with: ollama serve")
+            print("   Pull the model with: ollama pull gpt-oss:20b")
+            return False
+
+        # Check if gpt-oss:20b model is available
+        model_check = subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if "gpt-oss:20b" not in model_check.stdout and "gpt-oss" not in model_check.stdout:
+            print("⚠️  Ollama is running but gpt-oss:20b model not found")
+            print("   Pull the model with: ollama pull gpt-oss:20b")
+            return False
+
+    except FileNotFoundError:
+        print("❌ Error: curl or ollama command not found")
+        print("   Install Ollama from: https://ollama.ai")
         return False
-    
+    except subprocess.TimeoutExpired:
+        print("❌ Error: Connection to Ollama timed out")
+        print("   Make sure Ollama is running: ollama serve")
+        return False
+    except Exception as e:
+        print(f"❌ Error checking Ollama: {e}")
+        return False
+
     print("✅ All requirements met!")
     return True
 

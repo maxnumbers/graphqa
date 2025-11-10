@@ -11,7 +11,6 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Primary dependency definition is in pyproject.toml
 requirements = [
     "langchain>=0.3.0",
-    "langchain-openai>=0.2.0", 
     "langchain-community>=0.3.0",
     "networkx>=3.0",
     "numpy>=1.24.0",

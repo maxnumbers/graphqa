@@ -75,132 +75,90 @@ def check_graphqa_installed():
             print("   Try manually: pip install -e .")
             return False
 
-def check_api_key(auto_mode=False):
-    """Check for OpenAI API key"""
-    print("\n🔑 Checking OpenAI API key...")
-    
-    # Check if .env file exists
-    env_file = Path(".env")
-    env_example_file = Path("env.example")
-    
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("❌ OPENAI_API_KEY not found")
-        print("\n📝 To set up your API key:")
-        print("   1. Go to https://platform.openai.com/api-keys")
-        print("   2. Create a new API key")
-        print("   3. Choose one of these options:")
-        print("")
-        
-        if env_example_file.exists() and not env_file.exists():
-            print("   Option A (Recommended): Use .env file")
-            print("      cp env.example .env")
-            print("      # Then edit .env and add your API key")
-        elif env_file.exists():
-            print("   Option A: Update your .env file")
-            print("      # Edit .env and set OPENAI_API_KEY=your-key-here")
-        else:
-            print("   Option A: Create a .env file")
-            print("      echo 'OPENAI_API_KEY=your-key-here' > .env")
-        
-        print("")
-        print("   Option B: Set environment variable")
-        print("      export OPENAI_API_KEY='your-key-here'")
-        print("   Option C: Add to shell profile")
-        print("      echo 'export OPENAI_API_KEY=\"your-key-here\"' >> ~/.bashrc")
-        
-        # Offer multiple options
-        if auto_mode:
-            print("   In automated mode - skipping interactive API key setup")
-            print("   Please set up your API key manually:")
-            if env_example_file.exists():
-                print("      cp env.example .env && edit .env")
-            else:
-                print("      echo 'OPENAI_API_KEY=your-key-here' > .env")
-            return False
-        
-        print("")
-        print("   What would you like to do?")
-        print("   1. Create/update .env file now")
-        print("   2. I already have it in .env (reload)")
-        print("   3. Set key for this session only") 
-        print("   4. Skip (I'll set it up later)")
-        
-        while True:
-            choice = input("\n   Choose option (1-4): ").strip()
-            
-            if choice == "1":
-                key = input("   Enter your API key: ").strip()
-                if key:
-                    try:
-                        with open(".env", "w") as f:
-                            f.write(f"# GraphQA Environment Configuration\n")
-                            f.write(f"OPENAI_API_KEY={key}\n")
-                            f.write(f"\n# Optional: Add other configuration here\n")
-                            f.write(f"# See env.example for more options\n")
-                        print("✅ .env file created successfully")
-                        # Reload environment variables
-                        try:
-                            from dotenv import load_dotenv
-                            load_dotenv(override=True)
-                        except ImportError:
-                            pass
-                        os.environ["OPENAI_API_KEY"] = key
-                        return True
-                    except Exception as e:
-                        print(f"❌ Failed to create .env file: {e}")
-                        continue
-                else:
-                    print("   No key entered, try again")
-                    continue
-                    
-            elif choice == "2":
-                print("   Reloading .env file...")
-                try:
-                    from dotenv import load_dotenv
-                    load_dotenv(override=True)
-                    reloaded_key = os.getenv("OPENAI_API_KEY")
-                    if reloaded_key:
-                        print("✅ API key loaded from .env file")
-                        return True
-                    else:
-                        print("❌ No OPENAI_API_KEY found in .env file")
-                        print("   Please check your .env file contains: OPENAI_API_KEY=your-key-here")
-                        continue
-                except ImportError:
-                    print("❌ python-dotenv not available, cannot reload .env")
-                    continue
-                except Exception as e:
-                    print(f"❌ Error reloading .env: {e}")
-                    continue
-                    
-            elif choice == "3":
-                key = input("   Enter your API key for this session: ").strip()
-                if key:
-                    os.environ["OPENAI_API_KEY"] = key
-                    print("✅ API key set for this session")
-                    return True
-                else:
-                    print("   No key entered, try again")
-                    continue
-                    
-            elif choice == "4":
-                print("   Skipping API key setup")
+def check_ollama(auto_mode=False):
+    """Check if Ollama is running and gpt-oss:20b model is available"""
+    print("\n🤖 Checking Ollama...")
+
+    # Check if Ollama is running
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "http://localhost:11434/api/tags"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if result.returncode != 0:
+            print("❌ Ollama is not running")
+            print("\n📝 To set up Ollama:")
+            print("   1. Install Ollama from https://ollama.ai")
+            print("   2. Start Ollama:")
+            print("      ollama serve")
+            print("   3. Pull the gpt-oss:20b model:")
+            print("      ollama pull gpt-oss:20b")
+
+            if auto_mode:
+                print("\n   In automated mode - please set up Ollama manually")
                 return False
-                
+
+            print("\n   What would you like to do?")
+            print("   1. I'll set it up now (exit and restart)")
+            print("   2. Skip (I'll set it up later)")
+
+            choice = input("\n   Choose option (1-2): ").strip()
+            if choice == "1":
+                print("   Please install and start Ollama, then run this script again")
+                return False
             else:
-                print("   Invalid choice, please enter 1, 2, 3, or 4")
-                continue
-    else:
-        # Mask the key for security
-        masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
-        
-        # Check where the key came from
-        if env_file.exists():
-            print(f"✅ API key found in .env file ({masked_key})")
+                print("   Skipping Ollama setup")
+                return False
+
+        # Check if gpt-oss:20b model is available
+        model_check = subprocess.run(
+            ["ollama", "list"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if "gpt-oss:20b" in model_check.stdout or "gpt-oss" in model_check.stdout:
+            print("✅ Ollama is running")
+            print("✅ gpt-oss:20b model is available")
+            return True
         else:
-            print(f"✅ API key found in environment ({masked_key})")
-        return True
+            print("⚠️  Ollama is running but gpt-oss:20b model not found")
+            print("\n📝 To install the model:")
+            print("   ollama pull gpt-oss:20b")
+
+            if auto_mode:
+                print("\n   In automated mode - please pull the model manually")
+                return False
+
+            print("\n   What would you like to do?")
+            print("   1. I'll pull the model now (exit and restart)")
+            print("   2. Skip (I'll pull it later)")
+
+            choice = input("\n   Choose option (1-2): ").strip()
+            if choice == "1":
+                print("   Please run 'ollama pull gpt-oss:20b', then run this script again")
+                return False
+            else:
+                print("   Skipping model download")
+                return False
+
+    except FileNotFoundError:
+        print("❌ curl or ollama command not found")
+        print("\n📝 To set up Ollama:")
+        print("   1. Install Ollama from https://ollama.ai")
+        print("   2. Make sure 'ollama' is in your PATH")
+        return False
+    except subprocess.TimeoutExpired:
+        print("❌ Connection to Ollama timed out")
+        print("   Make sure Ollama is running: ollama serve")
+        return False
+    except Exception as e:
+        print(f"❌ Error checking Ollama: {e}")
+        return False
 
 def run_basic_test():
     """Run a basic functionality test"""
@@ -228,8 +186,9 @@ def show_next_steps():
     print("   1. Run the basic example:")
     print("      python examples/basic_usage.py")
     print("")
-    print("   2. Check your .env file setup:")
-    print("      cat .env  # Should contain your OPENAI_API_KEY")
+    print("   2. Verify Ollama is running:")
+    print("      ollama list  # Should show gpt-oss:20b model")
+    print("      curl http://localhost:11434/api/tags  # Check Ollama API")
     print("")
     print("   3. Customize performance settings:")
     print("      cat config.yaml  # Edit to change dataset loading limits")
@@ -249,7 +208,7 @@ def show_next_steps():
     print("      - Issues: https://github.com/catio-tech/graphqa/issues")
     print("")
     print("💡 Tips:")
-    print("   - Keep your .env file private and never commit it to git!")
+    print("   - Make sure Ollama is running before using GraphQA")
     print("   - Edit config.yaml to customize dataset loading behavior")
     print("   - We ship in test mode by default to prevent memory overload")
 
@@ -279,7 +238,7 @@ def main():
         ("Python version", check_python),
         ("Virtual environment", lambda: check_virtual_env(auto_mode=args.auto)),
         ("GraphQA installation", check_graphqa_installed),
-        ("OpenAI API key", lambda: check_api_key(auto_mode=args.auto)),
+        ("Ollama setup", lambda: check_ollama(auto_mode=args.auto)),
         ("Basic functionality", run_basic_test)
     ]
     
