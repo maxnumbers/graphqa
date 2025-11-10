@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-observability = ["langfuse>=2.0.0"]
+observability = ["arize-phoenix>=4.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -52,7 +52,7 @@ dev = [
     "mypy>=1.0.0",
 ]
 all = [
-    "langfuse>=2.0.0",
+    "arize-phoenix>=4.0.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",

@@ -1,7 +1,8 @@
 """
-Simple Langfuse observability integration for Universal Retrieval Agent.
+Simple Arize Phoenix observability integration for Universal Retrieval Agent.
 
 This module provides the easiest way to add LLM observability to the agent.
+Phoenix runs as a lightweight Python server - no Docker required!
 """
 
 import os
@@ -9,95 +10,87 @@ import logging
 import warnings
 from typing import Optional
 
-# Try to import Langfuse - if not available, observability will be disabled
+# Try to import Phoenix - if not available, observability will be disabled
 try:
-    from langfuse import Langfuse, get_client
-    from langfuse.langchain import CallbackHandler
-    LANGFUSE_AVAILABLE = True
-    # Suppress OpenTelemetry span warnings from Langfuse integration
-    warnings.filterwarnings("ignore", "Calling end() on an ended span", module="opentelemetry.sdk.trace")
+    from phoenix.trace.langchain import OpenInferenceTracer
+    import phoenix as px
+    PHOENIX_AVAILABLE = True
 except ImportError:
-    LANGFUSE_AVAILABLE = False
-    Langfuse = None
-    get_client = None
-    CallbackHandler = None
+    PHOENIX_AVAILABLE = False
+    OpenInferenceTracer = None
+    px = None
 
 logger = logging.getLogger(__name__)
 
 class UniversalObservability:
     """Simple observability wrapper for Universal Retrieval Agent."""
-    
-    def __init__(self, 
-                 public_key: Optional[str] = None,
-                 secret_key: Optional[str] = None,
-                 host: Optional[str] = None):
+
+    def __init__(self,
+                 endpoint: Optional[str] = None,
+                 auto_instrument: bool = True):
         """
-        Initialize Langfuse observability.
-        
+        Initialize Arize Phoenix observability.
+
         Args:
-            public_key: Langfuse public key (or set LANGFUSE_PUBLIC_KEY env var)
-            secret_key: Langfuse secret key (or set LANGFUSE_SECRET_KEY env var) 
-            host: Langfuse host (or set LANGFUSE_HOST env var, defaults to cloud)
+            endpoint: Phoenix endpoint URL (defaults to http://localhost:6006)
+            auto_instrument: Whether to auto-instrument LangChain (default: True)
         """
         self.enabled = False
         self.handler = None
-        self.client = None
-        
-        if not LANGFUSE_AVAILABLE:
-            logger.info("📊 Langfuse not available - observability disabled (install with: pip install langfuse)")
+        self.endpoint = endpoint or os.getenv("PHOENIX_ENDPOINT", "http://localhost:6006")
+
+        if not PHOENIX_AVAILABLE:
+            logger.info("📊 Arize Phoenix not available - observability disabled (install with: pip install arize-phoenix)")
             return
-        
+
         try:
-            # Setup Langfuse client
-            if public_key and secret_key:
-                Langfuse(
-                    public_key=public_key,
-                    secret_key=secret_key,
-                    host=host or "http://localhost:3000"  # Default to local
-                )
-            
-            # Get client instance
-            self.client = get_client()
-            
-            # Test connection
-            if self.client.auth_check():
-                self.handler = CallbackHandler()
+            # Try to connect to Phoenix server
+            # Phoenix doesn't require authentication for local use
+            if auto_instrument:
+                # Auto-instrument LangChain for automatic tracing
+                from phoenix.trace.langchain import LangChainInstrumentor
+                LangChainInstrumentor().instrument()
                 self.enabled = True
-                logger.info("✅ Langfuse observability enabled")
+                logger.info(f"✅ Arize Phoenix observability enabled (endpoint: {self.endpoint})")
+                logger.info("   View traces at: http://localhost:6006")
             else:
-                logger.warning("❌ Langfuse auth failed - observability disabled")
-                
+                # Use callback handler for manual control
+                self.handler = OpenInferenceTracer(endpoint=self.endpoint)
+                self.enabled = True
+                logger.info(f"✅ Arize Phoenix callback handler enabled (endpoint: {self.endpoint})")
+
         except Exception as e:
-            logger.warning(f"⚠️ Langfuse setup failed: {e} - observability disabled")
-    
+            logger.warning(f"⚠️ Phoenix setup failed: {e} - observability disabled")
+            logger.warning("   Make sure Phoenix server is running: python -m phoenix.server.main serve")
+
     def get_langchain_handler(self):
         """Get LangChain callback handler for tracing."""
-        return self.handler if self.enabled else None
-    
+        return self.handler if self.enabled and self.handler else None
+
     def trace_agent_run(self, name: str = "universal-agent-query"):
         """Create a trace context for agent runs."""
-        # Not used - LangChain CallbackHandler handles all tracing automatically
+        # Not used - auto-instrumentation or CallbackHandler handles all tracing automatically
         return DummyContext()
-    
+
     def is_enabled(self) -> bool:
         """Check if observability is enabled."""
         return self.enabled
-    
+
     def flush(self):
         """Flush any pending traces."""
-        if self.enabled and self.client:
-            self.client.flush()
+        # Phoenix handles flushing automatically
+        pass
 
 
 class DummyContext:
     """Dummy context manager when observability is disabled."""
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args):
         pass
-    
+
     def update_trace(self, **kwargs):
         pass
 
@@ -112,13 +105,11 @@ def get_observability() -> UniversalObservability:
         _global_observability = UniversalObservability()
     return _global_observability
 
-def configure_observability(public_key: str = None, 
-                          secret_key: str = None, 
-                          host: str = None):
+def configure_observability(endpoint: str = None,
+                          auto_instrument: bool = True):
     """Configure global observability settings."""
     global _global_observability
     _global_observability = UniversalObservability(
-        public_key=public_key,
-        secret_key=secret_key, 
-        host=host
-    ) 
+        endpoint=endpoint,
+        auto_instrument=auto_instrument
+    )

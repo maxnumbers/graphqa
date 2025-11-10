@@ -30,7 +30,7 @@ from .observability import get_observability
 from langchain_core.messages import SystemMessage
 from langchain import hub
 
-# Suppress OpenTelemetry warnings from Langfuse
+# Suppress OpenTelemetry warnings from Phoenix/observability integrations
 warnings.filterwarnings("ignore", message="Calling end() on an ended span")
 
 from .config import UniversalRetrieverConfig

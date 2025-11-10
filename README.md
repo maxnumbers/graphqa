@@ -267,6 +267,22 @@ cp env.example .env
 # OLLAMA_BASE_URL=http://your-custom-url:11434
 ```
 
+**Step 3 (Optional): Enable Observability with Arize Phoenix**
+
+Want to visualize your agent's reasoning and debug issues? Phoenix provides beautiful traces - no Docker needed!
+
+```bash
+# Install Phoenix
+pip install arize-phoenix
+
+# Start Phoenix server (in a separate terminal)
+python -m phoenix.server.main serve
+
+# Open http://localhost:6006 to view traces
+```
+
+See [PHOENIX_SETUP.md](PHOENIX_SETUP.md) for detailed instructions.
+
 Test the installation:
 
 ```python
@@ -859,7 +875,7 @@ grep -A 5 "test_mode" config.yaml
 **Missing Dependencies**
 ```bash
 # Install optional dependencies
-pip install langfuse  # For observability
+pip install arize-phoenix  # For observability (no Docker needed!)
 ```
 
 **Environment Variables Not Loading**

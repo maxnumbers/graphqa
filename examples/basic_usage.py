@@ -145,7 +145,7 @@ def show_next_steps():
     print("   3. Try with your own graph data:")
     print("      - Create a custom loader in src/graphqa/loaders/")
     print("      - See existing loaders for examples")
-    print("   4. Enable observability with: pip install langfuse")
+    print("   4. Enable observability with: pip install arize-phoenix (no Docker needed!)")
     print("\n💡 Need help?")
     print("   - GitHub Issues: https://github.com/catio-tech/graphqa/issues")
     print("   - Documentation: docs/user-guide.md")
