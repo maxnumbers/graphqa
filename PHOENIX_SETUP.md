@@ -15,8 +15,10 @@ Arize Phoenix is a lightweight LLM observability tool that runs entirely on your
 ### Step 1: Install Phoenix
 
 ```bash
-pip install arize-phoenix
-# Or with GraphQA observability extras
+# Install Phoenix and OpenInference LangChain instrumentation
+pip install 'arize-phoenix[evals]' openinference-instrumentation-langchain
+
+# Or install GraphQA with observability extras (includes both)
 pip install -e ".[observability]"
 ```
 
@@ -99,7 +101,7 @@ configure_observability(auto_instrument=False)
 This warning is normal if Phoenix isn't installed. Install it:
 
 ```bash
-pip install arize-phoenix
+pip install 'arize-phoenix[evals]' openinference-instrumentation-langchain
 ```
 
 ### "Phoenix setup failed"

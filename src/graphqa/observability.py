@@ -10,14 +10,16 @@ import logging
 import warnings
 from typing import Optional
 
-# Try to import Phoenix - if not available, observability will be disabled
+# Try to import Phoenix with new OpenInference API
 try:
-    from phoenix.trace.langchain import OpenInferenceTracer
+    from phoenix.otel import register
+    from openinference.instrumentation.langchain import LangChainInstrumentor
     import phoenix as px
     PHOENIX_AVAILABLE = True
 except ImportError:
     PHOENIX_AVAILABLE = False
-    OpenInferenceTracer = None
+    register = None
+    LangChainInstrumentor = None
     px = None
 
 logger = logging.getLogger(__name__)
@@ -36,40 +38,44 @@ class UniversalObservability:
             auto_instrument: Whether to auto-instrument LangChain (default: True)
         """
         self.enabled = False
-        self.handler = None
+        self.tracer_provider = None
         self.endpoint = endpoint or os.getenv("PHOENIX_ENDPOINT", "http://localhost:6006")
 
         if not PHOENIX_AVAILABLE:
-            logger.info("📊 Arize Phoenix not available - observability disabled (install with: pip install arize-phoenix)")
+            logger.info("📊 Arize Phoenix not available - observability disabled")
+            logger.info("   Install with: pip install 'arize-phoenix[evals]' openinference-instrumentation-langchain")
             return
 
         try:
-            # Try to connect to Phoenix server
-            # Phoenix doesn't require authentication for local use
             if auto_instrument:
+                # Register Phoenix OTEL tracer
+                self.tracer_provider = register(
+                    project_name="graphqa",
+                    endpoint=self.endpoint
+                )
+
                 # Auto-instrument LangChain for automatic tracing
-                from phoenix.trace.langchain import LangChainInstrumentor
-                LangChainInstrumentor().instrument()
+                LangChainInstrumentor().instrument(tracer_provider=self.tracer_provider)
+
                 self.enabled = True
-                logger.info(f"✅ Arize Phoenix observability enabled (endpoint: {self.endpoint})")
+                logger.info(f"✅ Arize Phoenix observability enabled")
+                logger.info(f"   Endpoint: {self.endpoint}")
                 logger.info("   View traces at: http://localhost:6006")
-            else:
-                # Use callback handler for manual control
-                self.handler = OpenInferenceTracer(endpoint=self.endpoint)
-                self.enabled = True
-                logger.info(f"✅ Arize Phoenix callback handler enabled (endpoint: {self.endpoint})")
 
         except Exception as e:
-            logger.warning(f"⚠️ Phoenix setup failed: {e} - observability disabled")
-            logger.warning("   Make sure Phoenix server is running: python -m phoenix.server.main serve")
+            logger.warning(f"⚠️ Phoenix setup failed: {e}")
+            logger.warning("   Observability disabled - GraphQA will still work normally")
+            logger.warning("   To enable: python -m phoenix.server.main serve")
 
     def get_langchain_handler(self):
         """Get LangChain callback handler for tracing."""
-        return self.handler if self.enabled and self.handler else None
+        # With auto-instrumentation, no callback handler is needed
+        # Traces are automatically captured via OpenTelemetry
+        return None
 
     def trace_agent_run(self, name: str = "universal-agent-query"):
         """Create a trace context for agent runs."""
-        # Not used - auto-instrumentation or CallbackHandler handles all tracing automatically
+        # Not used - auto-instrumentation handles all tracing automatically
         return DummyContext()
 
     def is_enabled(self) -> bool:
@@ -78,7 +84,7 @@ class UniversalObservability:
 
     def flush(self):
         """Flush any pending traces."""
-        # Phoenix handles flushing automatically
+        # Phoenix handles flushing automatically via OTEL
         pass
 
 

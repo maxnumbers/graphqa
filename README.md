@@ -272,8 +272,8 @@ cp env.example .env
 Want to visualize your agent's reasoning and debug issues? Phoenix provides beautiful traces - no Docker needed!
 
 ```bash
-# Install Phoenix
-pip install arize-phoenix
+# Install Phoenix with required dependencies
+pip install 'arize-phoenix[evals]' openinference-instrumentation-langchain
 
 # Start Phoenix server (in a separate terminal)
 python -m phoenix.server.main serve
@@ -874,8 +874,8 @@ grep -A 5 "test_mode" config.yaml
 
 **Missing Dependencies**
 ```bash
-# Install optional dependencies
-pip install arize-phoenix  # For observability (no Docker needed!)
+# Install optional dependencies for observability (no Docker needed!)
+pip install 'arize-phoenix[evals]' openinference-instrumentation-langchain
 ```
 
 **Environment Variables Not Loading**

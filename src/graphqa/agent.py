@@ -349,40 +349,63 @@ class UniversalRetrievalAgent:
         
         logger.info(f"✅ Initialized {len(self.tools)} universal tools")
     
+    def _format_error_handler(self, error: Exception) -> str:
+        """Custom error handler that provides format hints for local models"""
+        error_str = str(error)
+
+        if "Missing 'Action:'" in error_str or "Missing 'Action Input:'" in error_str:
+            return """Invalid format detected. You MUST follow this exact structure:
+
+Thought: [your reasoning here]
+Action: [tool name from the list]
+Action Input: [input for the tool]
+
+Example:
+Thought: I need to explore the graph schema first
+Action: graph_explorer
+Action Input: {"operation": "discover_schema"}
+
+Now, provide your response in the correct format."""
+
+        return f"Parsing error: {error_str}\n\nPlease follow the Thought/Action/Action Input format exactly."
+
     def _create_agent(self):
         """Create the ReAct agent with universal tools"""
-        
+
         # Create a custom prompt that includes schema information
         schema_info = self._get_schema_summary()
-        
+
         prompt_template = f"""You are a Universal Graph Analysis Assistant for {self.dataset_name} dataset.
 
 CURRENT SCHEMA: {schema_info}
 
-ANALYSIS WORKFLOW:
-1. **Discover**: Use graph_explorer for schema discovery (unless question is very specific)
-2. **Search**: Use universal_graph_query with exact JSON format for targeted searches  
-3. **Analyze**: Apply stats/algorithms for insights
-4. **Conclude**: Provide Final Answer after max 4 tool uses
-
-CRITICAL: Use exact JSON format from tool descriptions. Start with schema discovery for new questions.
-
-You have access to the following tools:
-
+You have access to these tools:
 {{tools}}
 
-Use the following format:
+CRITICAL FORMAT REQUIREMENTS - You MUST follow this exact format:
 
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{{tool_names}}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: [explain your reasoning]
+Action: [choose ONE tool from: {{tool_names}}]
+Action Input: [the input for that tool]
+Observation: [this will be provided by the system]
+
+Here is a concrete example of the CORRECT format:
+
+Question: How many nodes are in the graph?
+Thought: I need to get basic statistics about the graph structure
+Action: graph_stats
+Action Input: {{"operation": "basic_stats"}}
+Observation: Graph has 591 nodes and 1290 edges
 Thought: I now know the final answer
-Final Answer: the final answer to the original input question
+Final Answer: The graph contains 591 nodes.
 
-Begin!
+IMPORTANT RULES:
+1. ALWAYS write "Action:" on its own line after "Thought:"
+2. ALWAYS write "Action Input:" on its own line after "Action:"
+3. Do NOT skip any of these keywords
+4. Choose actions from this list ONLY: {{tool_names}}
+
+Begin! Remember to follow the format exactly.
 
 Question: {{input}}
 Thought:{{agent_scratchpad}}"""
@@ -395,14 +418,14 @@ Thought:{{agent_scratchpad}}"""
                 "tool_names": ", ".join([tool.name for tool in self.tools])
             }
         )
-        
+
         # Create ReAct agent
         self.agent = create_react_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=prompt
         )
-        
+
         # Create agent executor with verbose output to show thinking process
         # Configure for slow local inference with increased timeouts and iterations
         max_exec_time = self.config.llm.timeout_seconds * 10 if hasattr(self.config.llm, 'timeout_seconds') else 1800  # 30 min default
@@ -411,12 +434,12 @@ Thought:{{agent_scratchpad}}"""
             tools=self.tools,
             memory=self.memory,
             verbose=True,  # Keep verbose to show agent thinking
-            handle_parsing_errors=True,  # Allows agent to retry on format errors
+            handle_parsing_errors=self._format_error_handler,  # Custom error handler with format hints
             max_iterations=self.config.llm.max_iterations,  # Configurable from config.yaml
             max_execution_time=max_exec_time,  # Overall execution timeout for slow inference
             return_intermediate_steps=False  # Reduce memory overhead
         )
-        
+
         logger.info("✅ Universal agent created successfully")
     
     def _get_schema_summary(self) -> str:
