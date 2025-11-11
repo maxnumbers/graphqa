@@ -381,12 +381,12 @@ Now, provide your response in the correct format."""
 CURRENT SCHEMA: {schema_info}
 
 You have access to these tools:
-{{tools}}
+{tools}
 
 CRITICAL FORMAT REQUIREMENTS - You MUST follow this exact format:
 
 Thought: [explain your reasoning]
-Action: [choose ONE tool from: {{tool_names}}]
+Action: [choose ONE tool from: {tool_names}]
 Action Input: [the input for that tool]
 Observation: [this will be provided by the system]
 
@@ -404,12 +404,12 @@ IMPORTANT RULES:
 1. ALWAYS write "Action:" on its own line after "Thought:"
 2. ALWAYS write "Action Input:" on its own line after "Action:"
 3. Do NOT skip any of these keywords
-4. Choose actions from this list ONLY: {{tool_names}}
+4. Choose actions from this list ONLY: {tool_names}
 
 Begin! Remember to follow the format exactly.
 
-Question: {{input}}
-Thought:{{agent_scratchpad}}"""
+Question: {input}
+Thought:{agent_scratchpad}"""
 
         prompt = PromptTemplate(
             template=prompt_template,
