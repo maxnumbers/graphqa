@@ -367,7 +367,19 @@ Action Input: <JSON input here>
 
 Now, provide your response in the correct format."""
 
-        return f"Parsing error: {error_str}\n\nPlease follow the Thought/Action/Action Input format exactly."
+        if "Could not parse LLM output" in error_str:
+            return """Invalid format detected. You provided an answer without using the required format.
+
+You MUST use this format when you have the answer:
+
+Thought: I now know the final answer
+Final Answer: [your complete answer here]
+
+Do NOT just write text directly. ALWAYS start with "Thought:" and then "Final Answer:"
+
+Now, provide your answer in the correct format starting with "Thought:"."""
+
+        return f"Parsing error: {error_str}\n\nRemember: Always use Thought/Action/Action Input OR Thought/Final Answer format."
 
     def _create_agent(self):
         """Create the ReAct agent with universal tools"""
@@ -389,8 +401,11 @@ Thought: [explain your reasoning]
 Action: [choose ONE tool from: {tool_names}]
 Action Input: [the input for that tool]
 Observation: [this will be provided by the system]
+... (repeat Thought/Action/Observation as needed)
+Thought: I now know the final answer
+Final Answer: [your complete answer here]
 
-Here is a concrete example of the CORRECT format:
+EXAMPLE showing the COMPLETE workflow:
 
 Question: How many nodes are in the graph?
 Thought: I need to get basic statistics about the graph structure
@@ -400,11 +415,17 @@ Observation: Graph has 591 nodes and 1290 edges
 Thought: I now know the final answer
 Final Answer: The graph contains 591 nodes.
 
+CRITICAL: When you receive an Observation that answers the question:
+1. Write "Thought: I now know the final answer"
+2. Write "Final Answer:" followed by your answer
+3. Do NOT write plain text without "Final Answer:"
+
 IMPORTANT RULES:
 1. ALWAYS write "Action:" on its own line after "Thought:"
 2. ALWAYS write "Action Input:" on its own line after "Action:"
-3. Do NOT skip any of these keywords
-4. Choose actions from this list ONLY: {tool_names}
+3. ALWAYS write "Final Answer:" when you have the answer (NOT plain text)
+4. Do NOT skip any of these keywords
+5. Choose actions from this list ONLY: {tool_names}
 
 Begin! Remember to follow the format exactly.
 
