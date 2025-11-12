@@ -14,21 +14,14 @@ from typing import Dict, List, Any, Optional, Union
 from pathlib import Path
 import networkx as nx
 
-from langchain_community.chat_models import ChatOllama
-try:
-    # LangChain 1.0+ moved create_react_agent to langgraph
-    from langgraph.prebuilt import create_react_agent
-except ImportError:
-    # Fallback for older versions
-    from langchain.agents import create_react_agent
-from langchain.agents import AgentExecutor
-from langchain.tools import Tool
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
+from langchain_core.tools import Tool
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
+from langgraph.prebuilt import create_react_agent
+from langgraph.checkpoint.memory import MemorySaver
 
 from .observability import get_observability
-from langchain_core.messages import SystemMessage
-from langchain import hub
 
 # Suppress OpenTelemetry warnings from Phoenix/observability integrations
 warnings.filterwarnings("ignore", message="Calling end() on an ended span")
@@ -101,9 +94,8 @@ class UniversalRetrievalAgent:
         self.graph = None
         self.schema = None
         self.tools = []
-        self.agent = None
-        self.agent_executor = None
-        
+        self.agent_graph = None  # LangGraph compiled graph (replaces agent_executor)
+
         # Initialize LLM with optimized settings for large contexts
         # Note: timeout is per-request, important for slow local inference
         llm_timeout = self.config.llm.timeout_seconds if hasattr(self.config.llm, 'timeout_seconds') else 300
@@ -114,14 +106,10 @@ class UniversalRetrievalAgent:
             timeout=llm_timeout,  # Per-request timeout (default 300s for slow local inference)
             keep_alive="10m"  # Keep model loaded in memory for faster responses
         )
-        
-        # Memory for conversation context (with size limit to prevent context overflow)
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            max_token_limit=8000  # Limit memory to prevent context overflow
-        )
-        
+
+        # LangGraph 1.0 uses MemorySaver for conversation history
+        self.checkpointer = MemorySaver()
+
         logger.info(f"Universal Retrieval Agent initialized for dataset: {dataset_name}")
     
     def load_dataset(self, dataset_name: Optional[str] = None) -> bool:
@@ -198,10 +186,10 @@ class UniversalRetrievalAgent:
             True if successful, False otherwise
         """
         logger.info(f"Switching from {self.dataset_name} to {new_dataset}")
-        
-        # Clear current memory to avoid confusion
-        self.memory.clear()
-        
+
+        # Create new checkpointer for fresh conversation with new dataset
+        self.checkpointer = MemorySaver()
+
         # Load new dataset
         return self.load_dataset(new_dataset)
     
@@ -349,119 +337,35 @@ class UniversalRetrievalAgent:
         
         logger.info(f"✅ Initialized {len(self.tools)} universal tools")
     
-    def _format_error_handler(self, error: Exception) -> str:
-        """Custom error handler that provides format hints for local models"""
-        error_str = str(error)
-
-        if "Missing 'Action:'" in error_str or "Missing 'Action Input:'" in error_str:
-            return """Invalid format detected. You MUST follow this exact structure:
-
-Thought: [your reasoning here]
-Action: [tool name from the list]
-Action Input: [input for the tool]
-
-Example:
-Thought: I need to explore the graph schema first
-Action: graph_explorer
-Action Input: <JSON input here>
-
-Now, provide your response in the correct format."""
-
-        if "Could not parse LLM output" in error_str:
-            return """Invalid format detected. You provided an answer without using the required format.
-
-You MUST use this format when you have the answer:
-
-Thought: I now know the final answer
-Final Answer: [your complete answer here]
-
-Do NOT just write text directly. ALWAYS start with "Thought:" and then "Final Answer:"
-
-Now, provide your answer in the correct format starting with "Thought:"."""
-
-        return f"Parsing error: {error_str}\n\nRemember: Always use Thought/Action/Action Input OR Thought/Final Answer format."
-
     def _create_agent(self):
-        """Create the ReAct agent with universal tools"""
+        """Create the LangGraph ReAct agent with universal tools"""
 
-        # Create a custom prompt that includes schema information
+        # Create a custom system prompt that includes schema information
         schema_info = self._get_schema_summary()
 
-        # Use regular string (not f-string) to avoid escaping issues with JSON examples
-        prompt_template = """You are a Universal Graph Analysis Assistant for {dataset_name} dataset.
+        system_prompt = f"""You are a Universal Graph Analysis Assistant for {self.dataset_name} dataset.
 
 CURRENT SCHEMA: {schema_info}
 
-You have access to these tools:
-{tools}
+You have access to tools for graph analysis. When you need information, use a tool and wait for the result.
 
-CRITICAL FORMAT REQUIREMENTS - You MUST follow this exact format:
-
-Thought: [explain your reasoning]
-Action: [choose ONE tool from: {tool_names}]
-Action Input: [the input for that tool]
-Observation: [this will be provided by the system]
-... (repeat Thought/Action/Observation as needed)
+CRITICAL: After receiving tool results, you MUST provide a final answer using this format:
 Thought: I now know the final answer
 Final Answer: [your complete answer here]
 
-EXAMPLE showing the COMPLETE workflow:
+IMPORTANT:
+- Use tools to gather information about the graph
+- After getting tool results, always provide a "Final Answer:"
+- Do NOT just output plain text - always use "Final Answer:" prefix
+- Be concise but complete in your answers"""
 
-Question: How many nodes are in the graph?
-Thought: I need to get basic statistics about the graph structure
-Action: graph_stats
-Action Input: {{"operation": "basic_stats"}}
-Observation: Graph has 591 nodes and 1290 edges
-Thought: I now know the final answer
-Final Answer: The graph contains 591 nodes.
-
-CRITICAL: When you receive an Observation that answers the question:
-1. Write "Thought: I now know the final answer"
-2. Write "Final Answer:" followed by your answer
-3. Do NOT write plain text without "Final Answer:"
-
-IMPORTANT RULES:
-1. ALWAYS write "Action:" on its own line after "Thought:"
-2. ALWAYS write "Action Input:" on its own line after "Action:"
-3. ALWAYS write "Final Answer:" when you have the answer (NOT plain text)
-4. Do NOT skip any of these keywords
-5. Choose actions from this list ONLY: {tool_names}
-
-Begin! Remember to follow the format exactly.
-
-Question: {input}
-Thought:{agent_scratchpad}"""
-
-        prompt = PromptTemplate(
-            template=prompt_template,
-            input_variables=["input", "agent_scratchpad"],
-            partial_variables={
-                "dataset_name": self.dataset_name,
-                "schema_info": schema_info,
-                "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
-                "tool_names": ", ".join([tool.name for tool in self.tools])
-            }
-        )
-
-        # Create ReAct agent
-        self.agent = create_react_agent(
-            llm=self.llm,
+        # Create the LangGraph ReAct agent (replaces old create_react_agent + AgentExecutor)
+        # This returns a compiled graph that can be invoked directly
+        self.agent_graph = create_react_agent(
+            model=self.llm,
             tools=self.tools,
-            prompt=prompt
-        )
-
-        # Create agent executor with verbose output to show thinking process
-        # Configure for slow local inference with increased timeouts and iterations
-        max_exec_time = self.config.llm.timeout_seconds * 10 if hasattr(self.config.llm, 'timeout_seconds') else 1800  # 30 min default
-        self.agent_executor = AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            memory=self.memory,
-            verbose=True,  # Keep verbose to show agent thinking
-            handle_parsing_errors=self._format_error_handler,  # Custom error handler with format hints
-            max_iterations=self.config.llm.max_iterations,  # Configurable from config.yaml
-            max_execution_time=max_exec_time,  # Overall execution timeout for slow inference
-            return_intermediate_steps=False  # Reduce memory overhead
+            state_modifier=system_prompt,
+            checkpointer=self.checkpointer  # Enables conversation memory
         )
 
         logger.info("✅ Universal agent created successfully")
@@ -492,40 +396,50 @@ Thought:{agent_scratchpad}"""
     def ask(self, question: str) -> str:
         """
         Ask a natural language question about the dataset.
-        
+
         Args:
             question: Natural language question
-            
+
         Returns:
             AI-generated response with analysis results
         """
-        if self.agent_executor is None:
+        if self.agent_graph is None:
             return "❌ No dataset loaded. Please load a dataset first using load_dataset()."
-        
+
         # Get observability instance
         obs = get_observability()
-        
+
         try:
             start_time = time.time()
             logger.info(f"Processing question: {question}")
-            
-            # Prepare callbacks for LangChain (handles all tracing automatically)
-            callbacks = []
-            langchain_handler = obs.get_langchain_handler()
-            if langchain_handler:
-                callbacks.append(langchain_handler)
-            
-            # Execute the agent with observability
-            response = self.agent_executor.invoke(
-                {"input": question},
-                config={"callbacks": callbacks} if callbacks else {}
+
+            # LangGraph 1.0 uses thread_id for conversation continuity
+            config = {
+                "configurable": {"thread_id": "default"},
+                "recursion_limit": self.config.llm.max_iterations if hasattr(self.config.llm, 'max_iterations') else 10
+            }
+
+            # Invoke the compiled graph with the user's question
+            # LangGraph handles the ReAct loop internally
+            response = self.agent_graph.invoke(
+                {"messages": [HumanMessage(content=question)]},
+                config=config
             )
-            
+
             execution_time = time.time() - start_time
             logger.info(f"Question processed in {execution_time:.2f} seconds")
-            
-            # Check if we got a meaningful response
-            output = response.get("output", "")
+
+            # Extract the final answer from the response messages
+            messages = response.get("messages", [])
+            if not messages:
+                return "❌ No response received from agent."
+
+            # Get the last AI message
+            output = ""
+            for msg in reversed(messages):
+                if isinstance(msg, AIMessage):
+                    output = msg.content
+                    break
             
             # More precise failure detection - avoid false positives
             if (not output or 
@@ -604,7 +518,8 @@ Thought:{agent_scratchpad}"""
     
     def reset_conversation(self):
         """Reset the conversation memory"""
-        self.memory.clear()
+        # In LangGraph 1.0, create a new checkpointer to reset conversation history
+        self.checkpointer = MemorySaver()
         logger.info("Conversation memory cleared")
     
     def get_status(self) -> Dict[str, Any]:

@@ -8,7 +8,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 import networkx as nx
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from ..data_structures import SchemaInfo, AttributeType
