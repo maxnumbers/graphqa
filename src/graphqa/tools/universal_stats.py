@@ -36,7 +36,7 @@ class UniversalGraphStats(BaseTool):
     """Universal tool for computing statistics and insights from any graph dataset"""
     
     name: str = "universal_graph_stats"
-    description: str = """Compute graph statistics. Types: distribution, centrality, connectivity, topology, summary, attribute_analysis. Use stat_type parameter, optional groupby, filters, top_k."""
+    description: str = """Compute graph statistics. Valid stat_type values: distribution, centrality, connectivity, topology, summary, attribute_analysis. Optional parameters: groupby (list), filters (dict), top_k (int)."""
     
     args_schema: type[BaseModel] = UniversalStatsInput
     graph: nx.MultiDiGraph = None

@@ -32,7 +32,7 @@ class UniversalAlgorithmSelector(BaseTool):
     """Universal algorithm selector that chooses optimal analysis approaches for any dataset"""
     
     name: str = "universal_algorithm_selector"
-    description: str = """Select optimal algorithms for: community detection, influential nodes, shortest paths, connectivity analysis, graph similarity, network topology, anomaly detection, evolution analysis. Use analysis_goal and parameters dict."""
+    description: str = """Select graph algorithms. Valid analysis_goal values: community_detection, influential_nodes, shortest_paths, connectivity_analysis, graph_similarity, network_topology, anomaly_detection, evolution_analysis. Use with parameters dict."""
     
     args_schema: type[BaseModel] = UniversalAlgorithmInput
     graph: nx.MultiDiGraph = None

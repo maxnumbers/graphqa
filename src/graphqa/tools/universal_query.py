@@ -34,7 +34,7 @@ class UniversalGraphQuery(BaseTool):
     """Universal graph querying tool that works with any graph dataset"""
     
     name: str = "universal_graph_query"
-    description: str = """Query nodes by attributes, patterns, relationships, metrics, similarity, neighborhoods (depth-based), aggregations, or sampling. Use query_type and parameters dict."""
+    description: str = """Query nodes. Valid query_type values: find_by_attribute, find_by_pattern, find_by_relationship, find_by_metric, find_similar, explore_neighborhood, aggregate_by_attribute, sample_nodes. Use with parameters dict."""
     
     args_schema: type[BaseModel] = UniversalQueryInput
     graph: nx.MultiDiGraph = None

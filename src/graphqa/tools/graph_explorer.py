@@ -43,7 +43,7 @@ class UniversalGraphExplorer(BaseTool):
     """
     
     name: str = "graph_explorer"
-    description: str = """Discover schema and search graph. Operations: discover_schema, search_schema_by_query, sample_data, find_by_attribute, search_text, filter_nodes, range_search, get_node_attributes, get_edge_attributes, attribute_analysis, count_by_attribute, top_values, get_neighbors, find_by_values. Use operation parameter."""
+    description: str = """Discover schema and search graph. Valid operation values: discover_schema, search_schema_by_query, sample_data, find_by_attribute, search_text, filter_nodes, range_search, get_node_attributes, get_edge_attributes, attribute_analysis, count_by_attribute, top_values, get_neighbors, find_by_values."""
 
     args_schema: type[BaseModel] = GraphExplorerInput
     graph: nx.MultiDiGraph = None

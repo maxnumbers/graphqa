@@ -35,7 +35,7 @@ class UniversalNodeAnalyzer(BaseTool):
     """Universal node analysis tool with deep insights for any graph dataset"""
     
     name: str = "universal_node_analyzer"
-    description: str = """Deep analysis of individual nodes. Analysis types: analyze_node, node_metrics, node_relationships, node_similarity, node_influence, attribute_analysis. Use analysis_type and parameters dict with node_id."""
+    description: str = """Analyze individual nodes. Valid analysis_type values: analyze_node, node_metrics, node_relationships, node_similarity, node_influence, attribute_analysis. Use with parameters dict containing node_id."""
     
     args_schema: type[BaseModel] = UniversalAnalyzerInput
     graph: nx.MultiDiGraph = None
