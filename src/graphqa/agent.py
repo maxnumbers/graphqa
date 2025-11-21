@@ -364,7 +364,7 @@ IMPORTANT:
         self.agent_graph = create_react_agent(
             model=self.llm,
             tools=self.tools,
-            state_modifier=system_prompt,
+            prompt=system_prompt,  # System prompt (accepts str, SystemMessage, Callable, or Runnable)
             checkpointer=self.checkpointer  # Enables conversation memory
         )
 
