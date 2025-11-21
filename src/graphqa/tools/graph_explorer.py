@@ -43,48 +43,7 @@ class UniversalGraphExplorer(BaseTool):
     """
     
     name: str = "graph_explorer"
-    description: str = """🔍 UNIVERSAL GRAPH EXPLORER - SCHEMA DISCOVERY & SEARCH
-
-Discover dataset schema and perform flexible searches on any graph structure.
-Automatically adapts to available attributes and data types.
-
-📊 SCHEMA DISCOVERY:
-- discover_schema: Get complete dataset overview
-  Format: {"operation": "discover_schema"}
-- search_schema_by_query: Find relevant attributes using natural language  
-  Format: {"operation": "search_schema_by_query", "query": "find price-related attributes"}
-- sample_data: See example nodes and edges
-  Format: {"operation": "sample_data", "limit": 10}
-
-🔍 SEARCH OPERATIONS:
-- find_by_attribute: Search by specific field value
-  Format: {"operation": "find_by_attribute", "attribute": "category", "value": "Electronics"}
-- search_text: Text search across multiple fields (use "query" parameter)
-  Format: {"operation": "search_text", "query": "smartphone", "fields": ["title", "description"], "limit": 50}
-- filter_nodes: Multi-attribute filtering
-  Format: {"operation": "filter_nodes", "filters": {"brand": "Apple", "price": 100}, "limit": 25}
-- range_search: Numeric range queries
-  Format: {"operation": "range_search", "attribute": "price", "min_value": 10, "max_value": 100}
-
-📈 ATTRIBUTE ANALYSIS:
-- get_node_attributes: List all node attributes
-  Format: {"operation": "get_node_attributes"}
-- get_edge_attributes: List all edge attributes  
-  Format: {"operation": "get_edge_attributes"}
-- attribute_analysis: Analyze specific attribute
-  Format: {"operation": "attribute_analysis", "attribute": "price"}
-- count_by_attribute: Count nodes by attribute values
-  Format: {"operation": "count_by_attribute", "attribute": "category"}
-- top_values: Get most common values for an attribute
-  Format: {"operation": "top_values", "attribute": "brand", "limit": 10}
-
-🌐 RELATIONSHIP ANALYSIS:
-- get_neighbors: Find neighboring nodes
-  Format: {"operation": "get_neighbors", "node_id": "B00123", "depth": 2, "limit": 20}
-- find_by_values: Find nodes matching multiple values
-  Format: {"operation": "find_by_values", "attribute": "category", "values": ["Electronics", "Books"]}
-
-CRITICAL: Always use "query" parameter for search_text, not "text"!"""
+    description: str = """Discover schema and search graph. Operations: discover_schema, search_schema_by_query, sample_data, find_by_attribute, search_text, filter_nodes, range_search, get_node_attributes, get_edge_attributes, attribute_analysis, count_by_attribute, top_values, get_neighbors, find_by_values. Use operation parameter."""
 
     args_schema: type[BaseModel] = GraphExplorerInput
     graph: nx.MultiDiGraph = None
@@ -165,8 +124,14 @@ CRITICAL: Always use "query" parameter for search_text, not "text"!"""
             elif operation == "attribute_distribution":
                 result = self._get_attribute_distribution(attribute)
             else:
-                result = {"error": f"Unknown operation: {operation}"}
-            
+                result = {
+                    "error": f"Unknown operation: {operation}",
+                    "available_operations": ["discover_schema", "search_schema_by_query", "sample_data",
+                                            "find_by_attribute", "search_text", "filter_nodes", "range_search",
+                                            "get_node_attributes", "get_edge_attributes", "attribute_analysis",
+                                            "count_by_attribute", "top_values", "get_neighbors", "find_by_values"]
+                }
+
             # Add execution metadata
             result["execution_time"] = time.time() - start_time
             result["operation"] = operation

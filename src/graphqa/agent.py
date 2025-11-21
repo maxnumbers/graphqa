@@ -340,24 +340,21 @@ class UniversalRetrievalAgent:
     def _create_agent(self):
         """Create the LangGraph ReAct agent with universal tools"""
 
-        # Create a custom system prompt that includes schema information
-        schema_info = self._get_schema_summary()
+        # Create a minimal system prompt - schema is discovered via tools
+        system_prompt = f"""You are a Graph Analysis Assistant for {self.dataset_name}.
 
-        system_prompt = f"""You are a Universal Graph Analysis Assistant for {self.dataset_name} dataset.
+Available tools: graph_explorer (schema discovery, search), universal_graph_query (find nodes, explore neighborhoods), universal_algorithm_selector (paths, connectivity), universal_analyzer, universal_stats.
 
-CURRENT SCHEMA: {schema_info}
+To learn about the dataset schema, use: graph_explorer with operation "discover_schema"
 
-You have access to tools for graph analysis. When you need information, use a tool and wait for the result.
-
-CRITICAL: After receiving tool results, you MUST provide a final answer using this format:
+CRITICAL: After receiving tool results, provide your final answer using this format:
 Thought: I now know the final answer
 Final Answer: [your complete answer here]
 
 IMPORTANT:
-- Use tools to gather information about the graph
-- After getting tool results, always provide a "Final Answer:"
-- Do NOT just output plain text - always use "Final Answer:" prefix
-- Be concise but complete in your answers"""
+- Use tools to discover schema and answer questions
+- After tool results, always provide "Final Answer:"
+- Be concise but complete"""
 
         # Create the LangGraph ReAct agent (replaces old create_react_agent + AgentExecutor)
         # This returns a compiled graph that can be invoked directly

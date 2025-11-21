@@ -32,49 +32,7 @@ class UniversalAlgorithmSelector(BaseTool):
     """Universal algorithm selector that chooses optimal analysis approaches for any dataset"""
     
     name: str = "universal_algorithm_selector"
-    description: str = """🧠 UNIVERSAL ALGORITHM SELECTOR - INTELLIGENT ANALYSIS FOR ANY DATASET
-
-Automatically selects the best analysis algorithms and approaches based on your dataset characteristics and analysis goals.
-Works seamlessly with Amazon products, social networks, or any graph data.
-
-🔧 SMART ALGORITHM SELECTION: Analyzes your dataset and chooses optimal algorithms for your specific goals.
-
-🎯 ANALYSIS GOALS:
-
-🔍 community_detection - Find groups and clusters in your data
-   Format: {{"analysis_goal": "community_detection", "performance_preference": "balanced"}}
-   Returns: Community detection algorithm recommendations and results
-
-🌟 influential_nodes - Identify the most important nodes
-   Format: {{"analysis_goal": "influential_nodes", "parameters": {{"top_k": 20}}}}
-   Returns: Best centrality measures and most influential nodes
-
-🛣️ shortest_paths - Find optimal paths between nodes
-   Format: {{"analysis_goal": "shortest_paths", "parameters": {{"source": "node1", "target": "node2"}}}}
-   Returns: Shortest path algorithms and actual paths
-
-🔗 connectivity_analysis - Analyze network connectivity patterns
-   Format: {{"analysis_goal": "connectivity_analysis"}}
-   Returns: Connectivity algorithms and network structure analysis
-
-📊 graph_similarity - Compare nodes or subgraphs for similarity
-   Format: {{"analysis_goal": "graph_similarity", "parameters": {{"node_list": ["node1", "node2"]}}}}
-   Returns: Similarity algorithms and comparison results
-
-🌐 network_topology - Understand overall network structure
-   Format: {{"analysis_goal": "network_topology"}}
-   Returns: Topology analysis algorithms and structural insights
-
-🎭 anomaly_detection - Find unusual patterns or outliers
-   Format: {{"analysis_goal": "anomaly_detection"}}
-   Returns: Anomaly detection algorithms and unusual nodes/patterns
-
-📈 evolution_analysis - Analyze changes over time (if temporal data exists)
-   Format: {{"analysis_goal": "evolution_analysis"}}
-   Returns: Temporal analysis algorithms and trend detection
-
-All algorithm selection automatically adapts to your dataset size, structure, and characteristics!
-"""
+    description: str = """Select optimal algorithms for: community detection, influential nodes, shortest paths, connectivity analysis, graph similarity, network topology, anomaly detection, evolution analysis. Use analysis_goal and parameters dict."""
     
     args_schema: type[BaseModel] = UniversalAlgorithmInput
     graph: nx.MultiDiGraph = None

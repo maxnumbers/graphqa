@@ -36,47 +36,7 @@ class UniversalGraphStats(BaseTool):
     """Universal tool for computing statistics and insights from any graph dataset"""
     
     name: str = "universal_graph_stats"
-    description: str = """📊 UNIVERSAL GRAPH STATISTICS - COMPREHENSIVE ANALYSIS FOR ANY DATASET
-
-Compute detailed statistics and insights from any graph dataset with automatic schema adaptation.
-Works seamlessly with Amazon products, social networks, or any graph data.
-
-🔧 SMART SCHEMA ADAPTATION: Automatically discovers available attributes and computes relevant statistics.
-
-📈 STATISTICAL ANALYSIS TYPES:
-
-📊 distribution - Attribute value distributions and counts
-   Format: {{"stat_type": "distribution", "groupby": ["category"], "top_k": 15}}
-   Returns: Count distributions for specified attributes
-
-🌟 centrality - Node importance rankings and centrality metrics
-   Format: {{"stat_type": "centrality", "top_k": 20}}
-   Returns: PageRank, degree centrality, betweenness centrality rankings
-
-🔗 connectivity - Connection patterns and network structure analysis
-   Format: {{"stat_type": "connectivity", "filters": {{"min_degree": 5}}}}
-   Returns: Connectivity metrics, isolated nodes, component analysis
-
-🌐 topology - Graph-level structural metrics
-   Format: {{"stat_type": "topology"}}
-   Returns: Density, clustering, diameter, component counts
-
-📋 summary - Comprehensive overview of the entire dataset
-   Format: {{"stat_type": "summary"}}
-   Returns: Complete statistical summary including all major metrics
-
-🎯 attribute_analysis - Deep dive into specific attributes
-   Format: {{"stat_type": "attribute_analysis", "groupby": ["brand", "price_range"]}}
-   Returns: Detailed analysis of specified attributes with correlations
-
-📋 PARAMETER REQUIREMENTS:
-- Required: "stat_type" (string) - must be one of the types above
-- Optional: "groupby" (list of strings) - attribute names for grouping
-- Optional: "filters" (dict) - filter criteria for nodes
-- Optional: "top_k" (integer) - number of top results to return (default: 10)
-
-All statistics automatically adapt to your dataset's schema. No hardcoded assumptions!
-"""
+    description: str = """Compute graph statistics. Types: distribution, centrality, connectivity, topology, summary, attribute_analysis. Use stat_type parameter, optional groupby, filters, top_k."""
     
     args_schema: type[BaseModel] = UniversalStatsInput
     graph: nx.MultiDiGraph = None

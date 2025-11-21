@@ -34,49 +34,7 @@ class UniversalGraphQuery(BaseTool):
     """Universal graph querying tool that works with any graph dataset"""
     
     name: str = "universal_graph_query"
-    description: str = """🎯 UNIVERSAL GRAPH QUERIES - ANY DATASET, ANY QUESTION
-
-Execute powerful graph analysis on any dataset using dynamic schema discovery.
-Works seamlessly with Amazon products, social networks, or any graph data.
-
-🔧 SMART SCHEMA ADAPTATION: Automatically discovers and uses available attributes for querying.
-
-📊 UNIVERSAL QUERY TYPES:
-
-🔍 find_by_attribute - Find nodes by any attribute value
-   Format: {{"query_type": "find_by_attribute", "parameters": {{"attribute": "category", "value": "Electronics"}}, "limit": 50}}
-   Returns: Nodes matching the attribute value
-
-🏷️ find_by_pattern - Find nodes matching attribute patterns
-   Format: {{"query_type": "find_by_pattern", "parameters": {{"attribute": "title", "pattern": "smartphone"}}, "limit": 100}}
-   Returns: Nodes with attribute values containing the pattern
-
-🔗 find_by_relationship - Find nodes based on their connections
-   Format: {{"query_type": "find_by_relationship", "parameters": {{"relationship_type": "also_bought", "min_connections": 5}}, "limit": 75}}
-   Returns: Nodes with specified relationship patterns
-
-📈 find_by_metric - Find nodes by computed metrics (degree, centrality, etc.)
-   Format: {{"query_type": "find_by_metric", "parameters": {{"metric": "degree", "min_value": 10}}, "limit": 50}}
-   Returns: Nodes meeting metric criteria
-
-🎯 find_similar - Find nodes similar to a given node
-   Format: {{"query_type": "find_similar", "parameters": {{"node_id": "B00123", "similarity_attributes": ["category", "brand"]}}, "limit": 20}}
-   Returns: Nodes with similar attribute values
-
-🌐 explore_neighborhood - Explore the neighborhood around a node
-   Format: {{"query_type": "explore_neighborhood", "parameters": {{"node_id": "B00123", "depth": 2, "min_edge_weight": 0.5}}, "limit": 50}}
-   Returns: Nodes within specified distance from the target node
-
-📊 aggregate_by_attribute - Group and count by attribute values
-   Format: {{"query_type": "aggregate_by_attribute", "parameters": {{"group_by": "category", "metric": "count"}}, "limit": 25}}
-   Returns: Aggregated counts by attribute values
-
-🎲 sample_nodes - Get a random sample of nodes
-   Format: {{"query_type": "sample_nodes", "parameters": {{"criteria": {{"attribute": "price", "min": 10}}}}, "limit": 100}}
-   Returns: Random sample meeting optional criteria
-
-All queries automatically adapt to your dataset's schema. Attribute names are discovered dynamically!
-"""
+    description: str = """Query nodes by attributes, patterns, relationships, metrics, similarity, neighborhoods (depth-based), aggregations, or sampling. Use query_type and parameters dict."""
     
     args_schema: type[BaseModel] = UniversalQueryInput
     graph: nx.MultiDiGraph = None

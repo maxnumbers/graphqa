@@ -35,46 +35,7 @@ class UniversalNodeAnalyzer(BaseTool):
     """Universal node analysis tool with deep insights for any graph dataset"""
     
     name: str = "universal_node_analyzer"
-    description: str = """🔍 UNIVERSAL NODE ANALYSIS - DEEP DIVE FOR ANY DATASET
-
-Perform comprehensive analysis of individual nodes with automatic schema adaptation.
-Works seamlessly with Amazon products, social networks, or any graph data.
-
-🎯 INTELLIGENT ANALYSIS: Automatically discovers node properties and relationships for deep insights.
-
-🔍 UNIVERSAL ANALYSIS TYPES:
-
-🎯 analyze_node - Complete node analysis with all available insights
-   Format: {{"analysis_type": "analyze_node", "parameters": {{"node_id": "B00123ABCD"}}}}
-   Returns: Full node details, connections, metrics, relationships, and insights
-
-📈 node_metrics - Calculate centrality and importance metrics for a node
-   Format: {{"analysis_type": "node_metrics", "parameters": {{"node_id": "B00123ABCD"}}}}
-   Returns: Degree, PageRank, betweenness centrality, clustering coefficient
-
-🔗 node_relationships - Analyze all relationships and connections
-   Format: {{"analysis_type": "node_relationships", "parameters": {{"node_id": "B00123ABCD", "depth": 2}}}}
-   Returns: Direct and indirect connections, relationship patterns, network position
-
-🎭 node_similarity - Find nodes similar to the target node
-   Format: {{"analysis_type": "node_similarity", "parameters": {{"node_id": "B00123ABCD", "top_k": 10}}}}
-   Returns: Most similar nodes based on attributes and network position
-
-🌟 node_influence - Analyze the node's influence and reach in the network
-   Format: {{"analysis_type": "node_influence", "parameters": {{"node_id": "B00123ABCD"}}}}
-   Returns: Influence metrics, reachability, and network impact analysis
-
-🏷️ attribute_analysis - Deep dive into the node's attributes
-   Format: {{"analysis_type": "attribute_analysis", "parameters": {{"node_id": "B00123ABCD"}}}}
-   Returns: Detailed analysis of all node attributes with context and insights
-
-🎯 PARAMETER REQUIREMENTS:
-- All operations require: "analysis_type" (string)
-- All operations require: "parameters" dict with "node_id" (string)
-- Optional: "top_k" for similarity/influence analysis (default: 10)
-
-All analysis automatically adapts to your dataset's schema. No hardcoded assumptions!
-"""
+    description: str = """Deep analysis of individual nodes. Analysis types: analyze_node, node_metrics, node_relationships, node_similarity, node_influence, attribute_analysis. Use analysis_type and parameters dict with node_id."""
     
     args_schema: type[BaseModel] = UniversalAnalyzerInput
     graph: nx.MultiDiGraph = None
