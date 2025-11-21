@@ -158,12 +158,17 @@ class UniversalGraphExplorer(BaseTool):
                 
                 from ..schema.embedder import SchemaEmbedder
                 from ..schema.search_engine import QuerySchemaSearcher
-                
+
                 embedder = SchemaEmbedder()
                 embedder.initialize_schema_embeddings(self.graph_schema)
-                
-                object.__setattr__(self, 'schema_searcher', QuerySchemaSearcher(embedder))
-                self.logger.info("✅ Embedding-based schema search initialized")
+
+                # Only create searcher if embeddings were successfully initialized
+                if embedder.model is not None and embedder.schema_embeddings is not None:
+                    object.__setattr__(self, 'schema_searcher', QuerySchemaSearcher(embedder))
+                    self.logger.info("✅ Embedding-based schema search initialized")
+                else:
+                    object.__setattr__(self, 'schema_searcher', None)
+                    self.logger.info("Using keyword-based schema search (embeddings unavailable)")
             else:
                 self.logger.debug("Schema not available yet for embedding initialization")
                 

@@ -50,20 +50,44 @@ class SchemaEmbedder:
         self._load_model()
         
     def _load_model(self):
-        """Load the embedding model with error handling"""
+        """Load the embedding model with automatic local caching and graceful fallback"""
         try:
+            # First, try loading from local cache only (no network calls)
             logger.info(f"Loading embedding model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
-            logger.info("✅ Embedding model loaded successfully")
+            try:
+                self.model = SentenceTransformer(self.model_name, local_files_only=True)
+                logger.info("✅ Embedding model loaded from local cache")
+                return
+            except Exception:
+                # Model not in cache - need to download
+                logger.info("📥 Embedding model not found locally, downloading from HuggingFace...")
+                logger.info("   (This is a one-time download, ~90MB)")
+                pass
+
+            # Try downloading the model
+            try:
+                self.model = SentenceTransformer(self.model_name)
+                logger.info("✅ Embedding model downloaded and loaded successfully")
+                logger.info("   (Future runs will use the local cached version)")
+            except Exception as download_error:
+                # Download failed (likely no network connection)
+                logger.warning("⚠️  Could not download embedding model from HuggingFace")
+                logger.warning("   Schema search will use keyword fallback instead of AI-powered search")
+                logger.info("   To enable AI-powered schema search, ensure internet connection and restart")
+                self.model = None
+                # Don't raise - allow graceful fallback
+
         except Exception as e:
-            logger.error(f"Failed to load embedding model: {e}")
-            raise
+            logger.error(f"Unexpected error loading embedding model: {e}")
+            logger.warning("Schema search will use keyword fallback")
+            self.model = None
         
     def initialize_schema_embeddings(self, schema: SchemaInfo) -> None:
         """Create and store embeddings for all schema items (one-time cost)"""
-        
+
         if self.model is None:
-            raise RuntimeError("Embedding model not loaded")
+            logger.info("Skipping schema embeddings - model not available (using keyword fallback)")
+            return
         
         logger.info("Creating schema embeddings...")
         
